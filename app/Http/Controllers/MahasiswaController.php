@@ -15,16 +15,17 @@ class MahasiswaController extends Controller
 
         // Mengambil semua data mahasiswa beserta rekap absennya hari ini
         // UBAH BAGIAN INI:
-$mahasiswa = DB::table('daftar_mahasiswas')
-    ->leftJoin('absensis', function($join) use ($hariIni) {
-        $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
-             ->whereDate('absensis.created_at', $hariIni); // <--- Pakai whereDate
-    })
+// Mengambil semua data mahasiswa beserta rekap absennya hari ini
+        $mahasiswa = DB::table('daftar_mahasiswas')
+            ->leftJoin('absensis', function($join) {
+                $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
+                     ->whereDate('absensis.created_at', \Carbon\Carbon::today()->toDateString());
+            })
             ->select(
-                'daftar_mahasiswas.id as mahasiswa_id', // ID untuk Edit/Hapus Mahasiswa
+                'daftar_mahasiswas.id as mahasiswa_id', 
                 'daftar_mahasiswas.nim', 
                 'daftar_mahasiswas.nama', 
-                'absensis.id as absensi_id',      // ID untuk Edit/Hapus Absen jika ada
+                'absensis.id as absensi_id',      
                 'absensis.waktu_absen', 
                 'absensis.status'
             )
