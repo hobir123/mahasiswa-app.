@@ -1,8 +1,8 @@
 <?php
 
 return [
-
-    'default' => env('DB_CONNECTION', 'pgsql'),
+// Pastikan tulisannya kembali seperti semula ini:
+'default' => env('DB_CONNECTION', 'mysql'),
     'connections' => [
 
         'sqlite' => [

@@ -4,17 +4,20 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; 
+use Carbon\Carbon;
 
 class MahasiswaController extends Controller
 {
     // 1. Menampilkan Halaman Utama (Dashboard Tampilan Baru)
     public function index()
     {
+        $hariIni = Carbon::today()->toDateString();
+
         // Mengambil semua data mahasiswa beserta rekap absennya hari ini
         $mahasiswa = DB::table('daftar_mahasiswas')
-            ->leftJoin('absensis', function($join) {
+            ->leftJoin('absensis', function($join) use ($hariIni) {
                 $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
-                     ->whereDate('absensis.created_at', now()->toDateString());
+                     ->whereRaw('DATE(absensis.created_at) = ?', [$hariIni]);
             })
             ->select(
                 'daftar_mahasiswas.id as mahasiswa_id', // ID untuk Edit/Hapus Mahasiswa
@@ -35,7 +38,7 @@ class MahasiswaController extends Controller
         return view('index', compact('mahasiswa', 'totalMahasiswa', 'totalHadir', 'totalIzin', 'totalAlpa')); 
     }
 
-    // 2. Fitur Rekap Absensi Baru (Proses Masuk Absen Langsung Tanpa Dropdown Manual)
+    // 2. Fitur Rekap Absensi Baru
     public function store(Request $request)
     {
         $request->validate([
@@ -49,21 +52,23 @@ class MahasiswaController extends Controller
             return redirect()->route('mahasiswa.index')->with('error', 'Mahasiswa tidak ditemukan!');
         }
 
+        $hariIni = Carbon::today()->toDateString();
+
         // Cek apakah mahasiswa ini sudah absen hari ini
         $sudahAbsen = DB::table('absensis')
             ->where('nim', $request->nim)
-            ->whereDate('created_at', now()->toDateString())
+            ->whereRaw('DATE(created_at) = ?', [$hariIni])
             ->exists();
 
         if ($sudahAbsen) {
             // Jika sudah ada, kita update statusnya
             DB::table('absensis')
                 ->where('nim', $request->nim)
-                ->whereDate('created_at', now()->toDateString())
+                ->whereRaw('DATE(created_at) = ?', [$hariIni])
                 ->update([
                     'status' => $request->status,
-                    'waktu_absen' => now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
-                    'updated_at' => now()
+                    'waktu_absen' => Carbon::now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
+                    'updated_at' => Carbon::now()
                 ]);
             return redirect()->route('mahasiswa.index')->with('success', 'Status absensi berhasil diperbarui!');
         }
@@ -72,10 +77,10 @@ class MahasiswaController extends Controller
         DB::table('absensis')->insert([
             'nim' => $mahasiswa->nim,
             'nama' => $mahasiswa->nama,
-            'waktu_absen' => now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
+            'waktu_absen' => Carbon::now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
             'status' => $request->status,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
 
         return redirect()->route('mahasiswa.index')->with('success', 'Absensi berhasil dicatat!');
@@ -92,8 +97,8 @@ class MahasiswaController extends Controller
         DB::table('daftar_mahasiswas')->insert([
             'nim' => $request->nim,
             'nama' => $request->nama,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
 
         return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa baru berhasil didaftarkan!');
@@ -107,18 +112,15 @@ class MahasiswaController extends Controller
             'nama' => 'required',
         ]);
 
-        // Ambil data lama sebelum diubah untuk sinkronisasi tabel absen
         $mahasiswaLama = DB::table('daftar_mahasiswas')->where('id', $id)->first();
 
         if ($mahasiswaLama) {
-            // Update master biodata
             DB::table('daftar_mahasiswas')->where('id', $id)->update([
                 'nim' => $request->nim,
                 'nama' => $request->nama,
-                'updated_at' => now()
+                'updated_at' => Carbon::now()
             ]);
 
-            // Sinkronkan data lama di tabel rekap absen agar nama tidak pecah
             DB::table('absensis')->where('nim', $mahasiswaLama->nim)->update([
                 'nim' => $request->nim,
                 'nama' => $request->nama
@@ -134,10 +136,7 @@ class MahasiswaController extends Controller
         $mahasiswa = DB::table('daftar_mahasiswas')->where('id', $id)->first();
 
         if ($mahasiswa) {
-            // Hapus rekap riwayat absennya terlebih dahulu agar tidak menjadi data sampah
             DB::table('absensis')->where('nim', $mahasiswa->nim)->delete();
-            
-            // Hapus dari data master mahasiswa
             DB::table('daftar_mahasiswas')->where('id', $id)->delete();
         }
 
