@@ -14,11 +14,12 @@ class MahasiswaController extends Controller
         $hariIni = Carbon::today()->toDateString();
 
         // Mengambil semua data mahasiswa beserta rekap absennya hari ini
-        $mahasiswa = DB::table('daftar_mahasiswas')
-            ->leftJoin('absensis', function($join) use ($hariIni) {
-                $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
-                     ->whereRaw('DATE(absensis.created_at) = ?', [$hariIni]);
-            })
+        // UBAH BAGIAN INI:
+$mahasiswa = DB::table('daftar_mahasiswas')
+    ->leftJoin('absensis', function($join) use ($hariIni) {
+        $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
+             ->whereDate('absensis.created_at', $hariIni); // <--- Pakai whereDate
+    })
             ->select(
                 'daftar_mahasiswas.id as mahasiswa_id', // ID untuk Edit/Hapus Mahasiswa
                 'daftar_mahasiswas.nim', 
@@ -53,19 +54,18 @@ class MahasiswaController extends Controller
         }
 
         $hariIni = Carbon::today()->toDateString();
+// Cek apakah mahasiswa ini sudah absen hari ini
+$sudahAbsen = DB::table('absensis')
+    ->where('nim', $request->nim)
+    ->whereDate('created_at', $hariIni) // <--- Pakai whereDate
+    ->exists();
 
-        // Cek apakah mahasiswa ini sudah absen hari ini
-        $sudahAbsen = DB::table('absensis')
-            ->where('nim', $request->nim)
-            ->whereRaw('DATE(created_at) = ?', [$hariIni])
-            ->exists();
-
-        if ($sudahAbsen) {
-            // Jika sudah ada, kita update statusnya
-            DB::table('absensis')
-                ->where('nim', $request->nim)
-                ->whereRaw('DATE(created_at) = ?', [$hariIni])
-                ->update([
+if ($sudahAbsen) {
+    // Jika sudah ada, kita update statusnya
+    DB::table('absensis')
+        ->where('nim', $request->nim)
+        ->whereDate('created_at', $hariIni) // <--- Pakai whereDate
+        ->update([
                     'status' => $request->status,
                     'waktu_absen' => Carbon::now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
                     'updated_at' => Carbon::now()
