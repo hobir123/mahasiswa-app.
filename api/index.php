@@ -1,7 +1,7 @@
 <?php
 
-// Paksa Laravel mengabaikan cache config lama yang bikin error 500
-config(['app.hub' => true]);
-
-// Panggil file utama Laravel
+// 1. Muat dulu engine utama Laravel biar fungsi config() dikenali
 require __DIR__ . '/../public/index.php';
+
+// 2. Paksa Laravel mengabaikan cache config lokal yang read-only
+config(['app.hub' => true]);
