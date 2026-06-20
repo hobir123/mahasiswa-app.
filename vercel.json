@@ -1,7 +1,6 @@
 {
     "version": 2,
     "framework": "laravel",
-    "commands": "composer install --no-dev && php artisan config:cache && php artisan route:cache",
     "builds": [
         {
             "src": "api/index.php",
