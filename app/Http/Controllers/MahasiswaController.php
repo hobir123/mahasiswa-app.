@@ -11,15 +11,11 @@ class MahasiswaController extends Controller
     // 1. Menampilkan Halaman Utama (Dashboard Tampilan Baru)
     public function index()
     {
-        $hariIni = Carbon::today()->toDateString();
-
         // Mengambil semua data mahasiswa beserta rekap absennya hari ini
-        // UBAH BAGIAN INI:
-// Mengambil semua data mahasiswa beserta rekap absennya hari ini
         $mahasiswa = DB::table('daftar_mahasiswas')
             ->leftJoin('absensis', function($join) {
                 $join->on('daftar_mahasiswas.nim', '=', 'absensis.nim')
-                     ->whereDate('absensis.created_at', \Carbon\Carbon::today()->toDateString());
+                     ->whereDate('absensis.created_at', Carbon::today()->toDateString());
             })
             ->select(
                 'daftar_mahasiswas.id as mahasiswa_id', 
@@ -55,18 +51,19 @@ class MahasiswaController extends Controller
         }
 
         $hariIni = Carbon::today()->toDateString();
-// Cek apakah mahasiswa ini sudah absen hari ini
-$sudahAbsen = DB::table('absensis')
-    ->where('nim', $request->nim)
-    ->whereDate('created_at', $hariIni) // <--- Pakai whereDate
-    ->exists();
 
-if ($sudahAbsen) {
-    // Jika sudah ada, kita update statusnya
-    DB::table('absensis')
-        ->where('nim', $request->nim)
-        ->whereDate('created_at', $hariIni) // <--- Pakai whereDate
-        ->update([
+        // Cek apakah mahasiswa ini sudah absen hari ini
+        $sudahAbsen = DB::table('absensis')
+            ->where('nim', $request->nim)
+            ->whereDate('created_at', $hariIni)
+            ->exists();
+
+        if ($sudahAbsen) {
+            // Jika sudah ada, kita update statusnya
+            DB::table('absensis')
+                ->where('nim', $request->nim)
+                ->whereDate('created_at', $hariIni)
+                ->update([
                     'status' => $request->status,
                     'waktu_absen' => Carbon::now()->setTimezone('Asia/Jakarta')->format('H:i') . ' WIB',
                     'updated_at' => Carbon::now()
