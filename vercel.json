@@ -3,11 +3,11 @@
     "builds": [
         {
             "src": "api/index.php",
-            "use": "vercel-php@0.7.1"
-        },
-        {
-            "src": "public/**",
-            "use": "@vercel/static"
+            "use": "vercel-php@0.7.1",
+            "config": {
+                "maxExecutionTime": 30,
+                "includeFiles": ["public/**", "bootstrap/**", "config/**", "database/**", "routes/**", "app/**", "vendor/**"]
+            }
         }
     ],
     "routes": [
